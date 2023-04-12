@@ -1,0 +1,62 @@
+import tweepy
+import requests
+import json
+import time
+
+# Credenciales de la API de Twitter
+consumer_key = 'egiXnbH80WRfvkWrNiFzXAWPT'
+consumer_secret = '8pSvJxtgn7a0fUI6yznf9tV5Rzs0hZTsRI0BDubysNtHfzp4ln'
+access_token = '2635661464-Du1oY0R2uPdnHWCxzuSIgRT6tlpPOLr58oNrXyZ'
+access_token_secret = 'DykyYM8dHgbnhqjMswZ71Y4n7mo645mA8JggpvcXjItEz'
+
+# Autenticación con la API de Twitter
+auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+auth.set_access_token(access_token, access_token_secret)
+
+# Crear objeto API de Twitter
+api = tweepy.API(auth)
+
+# Credenciales de la API de Twitch
+client_id = '8cz09z9ds0yr21dpdh4zyxfdlo3a94'
+client_secret = 'ruerucpickz6c6mj4o2gwhe97qsdj8'
+
+# URL base de la API de Twitch
+base_url = 'https://api.twitch.tv/helix/'
+
+# Lista de nombres de streamers a seguir
+streamer_names = ['nombre_de_tu_streamer_1', 'nombre_de_tu_streamer_2', 'nombre_de_tu_streamer_3']
+
+# Duración del bucle (en segundos)
+duration = 86400 # 24 horas
+
+# Bucle principal
+while True:
+    # Verificar cada streamer en la lista
+    for streamer_name in streamer_names:
+        # Obtener ID del streamer a partir de su nombre de usuario
+        headers = {
+            'Client-ID': client_id,
+            'Authorization': 'Bearer ' + access_token
+        }
+        response = requests.get(base_url + 'users?login=' + streamer_name, headers=headers)
+        response_data = json.loads(response.text)
+        streamer_id = response_data['data'][0]['id']
+
+        # Configurar y enviar solicitud para verificar si el streamer está en línea
+        params = {
+            'user_id': streamer_id
+        }
+        response = requests.get(base_url + 'streams', headers=headers, params=params)
+        response_data = json.loads(response.text)
+
+        # Si el streamer está en línea, publicar un tweet
+        if response_data['data']:
+            tweet = '¡' + streamer_name + ' está en línea en Twitch! ¡Mira su transmisión en vivo aquí: ' + response_data['data'][0]['url'] + ' #twitch #streaming'
+            api.update_status(tweet)
+
+    # Esperar una hora antes de verificar de nuevo
+    time.sleep(3600)
+
+    # Si se alcanza la duración máxima, salir del bucle
+    if time.time() > start_time + duration:
+        break
